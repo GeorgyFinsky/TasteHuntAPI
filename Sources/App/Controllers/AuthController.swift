@@ -17,17 +17,18 @@ struct AuthController: RouteCollection {
         userGroup.get("login", use: loginUserHandler)
         userGroup.get("username", use: isUsernameEnabled)
         userGroup.put("kitchen", use: addKitchensHandler)
+        userGroup.put("image", use: uploadProfileImageHandler)
     }
     
-    func isUsernameEnabled(_ req: Request) async throws -> Bool {
+    func isUsernameEnabled(_ req: Request) async throws -> GuestNameExistModel {
         if let username = try? req.query.get(String.self, at: "username") {
             let isExist = try await GuestModel.query(on: req.db)
                 .filter(\.$username == username)
                 .first()
             
-            return isExist != nil
+            return GuestNameExistModel(isExist: isExist != nil)
         } else {
-            return true
+            throw Abort(.badRequest)
         }
     }
     
@@ -47,7 +48,7 @@ struct AuthController: RouteCollection {
         return user.convertToPublic()
     }
     
-    func loginUserHandler(_ req: Request) async throws -> String {
+    func loginUserHandler(_ req: Request) async throws -> GuestTokenModel {
         guard let username = try? req.query.get(String.self, at: "username") else {
             throw Abort(.badRequest)
         }
@@ -61,7 +62,7 @@ struct AuthController: RouteCollection {
         let isVerify = try user?.verify(password: password)
         
         if isVerify != nil {
-            return String((user?.$id.value)!)
+            return GuestTokenModel(token: String((user?.$id.value)!))
         } else {
             throw Abort(.unauthorized)
         }
@@ -111,6 +112,14 @@ struct AuthController: RouteCollection {
         return guests
     }
     
+}
+
+struct GuestTokenModel: Content {
+    var token: String
+}
+
+struct GuestNameExistModel: Content {
+    var isExist: Bool
 }
 
 struct GuestImageDTO: Content {

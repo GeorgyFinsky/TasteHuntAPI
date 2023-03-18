@@ -82,7 +82,7 @@ struct CafeController: RouteCollection {
     func getAllCafesHandler(_ req: Request) async throws -> [CafeModel.Public] {
         let cafes = try await CafeModel.query(on: req.db).all()
         
-        var publicCafes = cafes.map({ $0.convertToPublic() })
+        let publicCafes = cafes.map({ $0.convertToPublic() })
         return publicCafes
     }
     
