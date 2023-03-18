@@ -17,17 +17,17 @@ struct CafeController: RouteCollection {
         cafeGroup.get("login", use: loginCafeHandler)
     }
     
-    func isUsernameEnabled(_ req: Request) async throws -> Bool {
-        if let name = try? req.query.get(String.self, at: "name") {
-            let isExist = try await CafeModel.query(on: req.db)
-                .filter(\.$name == name)
-                .first()
-            
-            return isExist != nil
-        } else {
-            return true
-        }
-    }
+//    func isUsernameEnabled(_ req: Request) async throws -> GuestNameExistModel {
+//        if let username = try? req.query.get(String.self, at: "username") {
+//            let isExist = try await GuestModel.query(on: req.db)
+//                .filter(\.$username == username)
+//                .first()
+//
+//            return GuestNameExistModel(isExist: isExist != nil)
+//        } else {
+//            throw Abort(.badRequest)
+//        }
+//    }
     
     func createCafeHandler(_ req: Request) async throws -> CafeModel.Public {
         guard let cafeData = try? req.content.decode(CafeImageDTO.self) else {
@@ -55,6 +55,7 @@ struct CafeController: RouteCollection {
         let storagePath = req.application.directory.workingDirectory + "/Storage/Cafes" + "/\(cafeData.id).jpg"
         
         try await req.fileio.writeFile(.init(data: cafeData.profileImageURL), at: storagePath)
+        cafe.profileImageURL = storagePath
         try await cafe.save(on: req.db)
         return cafe.convertToPublic()
     }
