@@ -15,19 +15,8 @@ struct CafeController: RouteCollection {
         cafeGroup.post(use: createCafeHandler)
         cafeGroup.get(use: getAllCafesHandler)
         cafeGroup.get("login", use: loginCafeHandler)
+        cafeGroup.get("current", use: getCafeHandler)
     }
-    
-//    func isUsernameEnabled(_ req: Request) async throws -> GuestNameExistModel {
-//        if let username = try? req.query.get(String.self, at: "username") {
-//            let isExist = try await GuestModel.query(on: req.db)
-//                .filter(\.$username == username)
-//                .first()
-//
-//            return GuestNameExistModel(isExist: isExist != nil)
-//        } else {
-//            throw Abort(.badRequest)
-//        }
-//    }
     
     func createCafeHandler(_ req: Request) async throws -> CafeModel.Public {
         guard let cafeData = try? req.content.decode(CafeImageDTO.self) else {
@@ -38,7 +27,7 @@ struct CafeController: RouteCollection {
             id: cafeData.id,
             name: cafeData.name,
             password: try Bcrypt.hash(cafeData.password),
-            phone: cafeData.password,
+            phone: cafeData.phone,
             profileImageURL: "",
             gpsX: cafeData.gpsX,
             gpsY: cafeData.gpsY,
@@ -52,10 +41,11 @@ struct CafeController: RouteCollection {
             sundayWorkTime: cafeData.saturdayWorkTime
         )
         
-        let storagePath = req.application.directory.workingDirectory + "/Storage/Cafes" + "/\(cafeData.id).jpg"
+        let fileName = "\(cafeData.id).jpg"
+        let storagePath = req.application.directory.publicDirectory + fileName
         
         try await req.fileio.writeFile(.init(data: cafeData.profileImageURL), at: storagePath)
-        cafe.profileImageURL = storagePath
+        cafe.profileImageURL = "http://localhost:8080/" + fileName
         try await cafe.save(on: req.db)
         return cafe.convertToPublic()
     }
@@ -78,6 +68,17 @@ struct CafeController: RouteCollection {
         } else {
             throw Abort(.unauthorized)
         }
+    }
+    
+    func getCafeHandler(_ req: Request) async throws -> CafeModel.Public {
+        guard let id = try? req.query.get(String.self, at: "cafeID") else {
+            throw Abort(.badRequest)
+        }
+        guard let cafe = try await CafeModel.find(UUID(id), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return cafe.convertToPublic()
     }
     
     func getAllCafesHandler(_ req: Request) async throws -> [CafeModel.Public] {

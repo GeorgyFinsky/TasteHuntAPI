@@ -9,5 +9,8 @@ func routes(_ app: Application) throws {
     try app.register(collection: AuthController())
     try app.register(collection: VisitController())
     try app.register(collection: CafeController())
-    app.routes.defaultMaxBodySize = "100Mb"
+    try app.register(collection: DichesController())
+    let file = FileMiddleware(publicDirectory: app.directory.publicDirectory)
+    app.middleware.use(file)
+    app.routes.defaultMaxBodySize = "100mb"
 }

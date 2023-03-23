@@ -96,11 +96,11 @@ struct AuthController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        let storagePath = req.application.directory.workingDirectory + "/Storage/Guests" + "/\(id).jpg"
+        let fileName = "\(id).jpg"
+        let storagePath = req.application.directory.publicDirectory + fileName
         
         try await req.fileio.writeFile(.init(data: imageData.profileImageURL), at: storagePath)
-        
-        guest.profileImageURL = storagePath
+        guest.profileImageURL = "http://localhost:8080/" + fileName
         try await guest.save(on: req.db)
         
         return guest.convertToPublic()
